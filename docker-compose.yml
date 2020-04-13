@@ -1,0 +1,49 @@
+version: '2'
+services:
+  webot:
+    build: ./
+    image: 899150993273.dkr.ecr.cn-north-1.amazonaws.com.cn/cloud:agent-${version}
+    ports:
+      - "5566:5000"
+    environment:
+      C_FORCE_ROOT: "true"
+      LANG: C.UTF-8
+    volumes:
+      -  /etc/localtime:/etc/localtime
+      - ./local_settings.py:/app/local_settings.py
+    restart: always
+    command: /usr/local/bin/gunicorn -c gunicorn_config.py monarch.wsgi:application
+  celery:
+    build: ./
+    image: 899150993273.dkr.ecr.cn-north-1.amazonaws.com.cn/cloud:agent-${version}
+    environment:
+      C_FORCE_ROOT: "true"
+      LANG: C.UTF-8
+    volumes:
+      -  /etc/localtime:/etc/localtime
+      - ./local_settings.py:/app/local_settings.py
+    restart: always
+    command: celery worker -A monarch.corelibs.backend.celery_worker --loglevel=INFO -c 4 -P gevent -Q celery
+
+  celery-beat:
+    build: ./
+    image: 899150993273.dkr.ecr.cn-north-1.amazonaws.com.cn/cloud:agent-${version}
+    environment:
+      C_FORCE_ROOT: "true"
+      LANG: C.UTF-8
+    volumes:
+      -  /etc/localtime:/etc/localtime
+      - ./local_settings.py:/app/local_settings.py
+    restart: always
+    command: celery beat -A manage.celery -l debug
+  redis:
+    image: 899150993273.dkr.ecr.cn-north-1.amazonaws.com.cn/nlp:redis-latest
+    volumes:
+      - ./redis/data:/data
+    restart: always
+
+  admin:
+    image: 899150993273.dkr.ecr.cn-north-1.amazonaws.com.cn/cloud:agent_admin
+    ports:
+      - "5567:80"
+    restart: always

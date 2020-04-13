@@ -1,0 +1,2 @@
+class SystemCentException(Exception):
+    pass
